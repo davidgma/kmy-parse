@@ -1,0 +1,6 @@
+{
+  "name": "KMyMoney XML to SQLite Converter",
+  "description": "Command-line tool in Node.js using @sqlite.org/sqlite-wasm to parse KMyMoney input XML files, populate SQLite tables with ratio-to-decimal conversion, log unrecognized tags, and execute SQL queries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

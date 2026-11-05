@@ -1,0 +1,3 @@
+David|david@example.com|London|UK
+A000001|BoS ChequePlus|1
+AStd::Asset|Asset|9
