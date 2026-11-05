@@ -44,7 +44,7 @@ CREATE TABLE t_accounts (id TEXT, parentaccount TEXT, lastreconciled TEXT, lastm
 CREATE TABLE t_subaccount_per_account (parent_id TEXT, child_id TEXT);
 CREATE TABLE t_account_key_value_pairs (account_id TEXT, key TEXT, value TEXT);
 CREATE TABLE t_transactions (id TEXT, postdate TEXT, memo TEXT, entrydate TEXT, commodity TEXT);
-CREATE TABLE t_splits (id TEXT, payee TEXT, reconciledate TEXT, action TEXT, reconcileflag TEXT, value TEXT, shares TEXT, price TEXT, memo TEXT, account TEXT, number TEXT, bankid TEXT);
+CREATE TABLE t_splits (split_id TEXT, transaction_id TEXT, payee TEXT, reconciledate TEXT, action TEXT, reconcileflag TEXT, value TEXT, shares TEXT, price TEXT, memo TEXT, account TEXT, number TEXT, bankid TEXT);
 CREATE TABLE t_key_value_pairs (key TEXT, value TEXT);
 CREATE TABLE t_securities (id TEXT, name TEXT, symbol TEXT, type TEXT, rounding_method TEXT, saf TEXT, pp TEXT, trading_currency TEXT, trading_market TEXT);
 CREATE TABLE t_security_key_value_pairs (security_id TEXT, key TEXT, value TEXT);
@@ -382,8 +382,8 @@ function processNodes(nodeList, parentContext = {}) {
                     const bankid = sAttrs.bankid || '';
 
                     db.exec({
-                      sql: 'INSERT INTO t_splits (id, payee, reconciledate, action, reconcileflag, value, shares, price, memo, account, number, bankid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                      bind: [splitId, payee, reconciledate, action, reconcileflag, value, shares, price, splitMemo, account, number, bankid]
+                      sql: 'INSERT INTO t_splits (split_id, transaction_id, payee, reconciledate, action, reconcileflag, value, shares, price, memo, account, number, bankid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                      bind: [splitId, id, payee, reconciledate, action, reconcileflag, value, shares, price, splitMemo, account, number, bankid]
                     });
                   }
                 }
