@@ -367,7 +367,7 @@ function buildTransactions(db) {
         action: s.action || '',
         reconcileflag: s.reconcileflag !== undefined ? String(s.reconcileflag) : '',
         value: formatToRatio(s.value, 2),
-        shares: formatToRatio(s.shares, 2),
+        shares: formatToRatio(s.shares, 8),
         price: formatToRatio(s.price, 8),
         memo: s.memo || '',
         account: s.account || '',
@@ -660,6 +660,9 @@ if (instObj) kmyChildren.push(instObj);
 const payeesObj = buildPayees(db);
 if (payeesObj) kmyChildren.push(payeesObj);
 
+kmyChildren.push({ COSTCENTERS: [] });
+kmyChildren.push({ TAGS: [] });
+
 const accountsObj = buildAccounts(db);
 if (accountsObj) kmyChildren.push(accountsObj);
 
@@ -668,6 +671,8 @@ if (txObj) kmyChildren.push(txObj);
 
 const kvObj = buildKeyValuePairs(db);
 if (kvObj) kmyChildren.push(kvObj);
+
+kmyChildren.push({ SCHEDULES: [] });
 
 const secObj = buildSecurities(db);
 if (secObj) kmyChildren.push(secObj);
@@ -683,6 +688,8 @@ if (reportsObj) kmyChildren.push(reportsObj);
 
 const budgetsObj = buildBudgets(db);
 if (budgetsObj) kmyChildren.push(budgetsObj);
+
+kmyChildren.push({ ONLINEJOBS: [] });
 
 const xmlData = [
   {

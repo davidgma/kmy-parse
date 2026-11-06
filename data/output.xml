@@ -29,6 +29,8 @@
    <ADDRESS street="her address" city="London" state="" zip="" telephone="0208" country="UK" county="" zipcode="" postcode=""/>
   </PAYEE>
  </PAYEES>
+ <COSTCENTERS/>
+ <TAGS/>
  <ACCOUNTS>
   <ACCOUNT id="AStd::Asset" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="9" name="Asset" description="Top level asset" currency="GBP">
    <SUBACCOUNTS>
@@ -44,7 +46,10 @@
  </ACCOUNTS>
  <TRANSACTIONS>
   <TRANSACTION id="T000000000000000001" postdate="2007-11-03" memo="Salary" entrydate="2007-12-13" commodity="GBP">
-   <SPLITS/>
+   <SPLITS>
+    <SPLIT id="S0001" payee="P000001" reconciledate="2007-11-04" action="" reconcileflag="1" value="1/10" shares="1/10" price="1/1" memo="Split 1" account="A000001" number="1" bankid="B1"/>
+    <SPLIT id="S0002" payee="P000001" reconciledate="2007-11-04" action="" reconcileflag="1" value="-1/10" shares="-1/10" price="1/1" memo="Split 2" account="AStd::Asset" number="2" bankid="B2"/>
+   </SPLITS>
   </TRANSACTION>
  </TRANSACTIONS>
  <KEYVALUEPAIRS>
@@ -52,6 +57,7 @@
   <PAIR key="kmm-baseCurrency" value="GBP"/>
   <PAIR key="kmm-id" value="{6e2c84ac-bd63-45ec-9ddc-3a7ea3a123af}"/>
  </KEYVALUEPAIRS>
+ <SCHEDULES/>
  <SECURITIES>
   <SECURITY id="E000001" name="Standard Life Pension FTSE Tracker" symbol="STFTK" type="1" rounding-method="" saf="100" pp="4" trading-currency="" trading-market="">
    <KEYVALUEPAIRS>
@@ -83,4 +89,5 @@
    </ACCOUNT>
   </BUDGET>
  </BUDGETS>
+ <ONLINEJOBS/>
 </KMYMONEY-FILE>
