@@ -5,20 +5,24 @@ import path from 'path';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { XMLParser } from 'fast-xml-parser';
 
-// 1. Parse optional command line arguments: --folder, --inputXml, --outputDb
+// 1. Parse optional command line arguments: --folder, --inputKmy / --inputXml, --outputDb, --runSqls
 let folderArg = 'data';
-let inputXmlArg = 'input.xml';
+let inputKmyArg = 'input.xml';
 let outputDbArg = 'output.sqlite';
+let runSqls = true;
 
 const args = process.argv.slice(2);
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
   if (arg === '--folder' && i + 1 < args.length) {
     folderArg = args[++i];
-  } else if (arg === '--inputXml' && i + 1 < args.length) {
-    inputXmlArg = args[++i];
+  } else if ((arg === '--inputKmy' || arg === '--inputXml') && i + 1 < args.length) {
+    inputKmyArg = args[++i];
   } else if (arg === '--outputDb' && i + 1 < args.length) {
     outputDbArg = args[++i];
+  } else if (arg === '--runSqls' && i + 1 < args.length) {
+    const val = String(args[++i]).toLowerCase().trim();
+    runSqls = !(val === 'false' || val === '0' || val === 'no' || val === 'off');
   } else if (!arg.startsWith('--') && i === 0) {
     folderArg = arg;
   }
@@ -35,12 +39,12 @@ if (!fs.existsSync(folderPath) || !fs.statSync(folderPath).isDirectory()) {
 }
 
 // Check if input XML file exists
-const inputXmlPath = path.isAbsolute(inputXmlArg)
-  ? inputXmlArg
-  : path.join(folderPath, inputXmlArg);
+const inputXmlPath = path.isAbsolute(inputKmyArg)
+  ? inputKmyArg
+  : path.join(folderPath, inputKmyArg);
 
 if (!fs.existsSync(inputXmlPath) || !fs.statSync(inputXmlPath).isFile()) {
-  console.error(`File "${inputXmlArg}" does not exist in folder "${folderArg}".`);
+  console.error(`File "${inputKmyArg}" does not exist in folder "${folderArg}".`);
   process.exit(1);
 }
 
@@ -483,8 +487,10 @@ function processNodes(nodeList, parentContext = {}) {
         for (const childNode of children) {
           const cDetails = getNodeDetails(childNode);
           if (cDetails.tagName.toUpperCase() === 'PRICEPAIR') {
-            const price_from = cDetails.attrs.from || '';
-            const price_to = cDetails.attrs.to || '';
+            const price_from = (cDetails.attrs.from || '').trim();
+            const price_to = (cDetails.attrs.to || '').trim();
+
+            if (!price_from || !price_to) continue; // Skip pricepairs with missing 'from' or 'to'
 
             for (const ppChild of cDetails.children) {
               const pDetails = getNodeDetails(ppChild);
@@ -621,7 +627,7 @@ function processNodes(nodeList, parentContext = {}) {
 processNodes(parsed);
 db.exec('COMMIT;');
 
-// 5. Run any .sql files in alphabetical order against the sqlite database
+// 5. Run any .sql files in alphabetical order against the sqlite database if runSqls is true
 function splitSqlStatements(sql) {
   const statements = [];
   let current = '';
@@ -684,31 +690,33 @@ function splitSqlStatements(sql) {
   return statements;
 }
 
-const allFiles = fs.readdirSync(folderPath);
-const sqlFiles = allFiles
-  .filter(f => f.endsWith('.sql') && fs.statSync(path.join(folderPath, f)).isFile())
-  .sort((a, b) => a.localeCompare(b));
+if (runSqls) {
+  const allFiles = fs.readdirSync(folderPath);
+  const sqlFiles = allFiles
+    .filter(f => f.endsWith('.sql') && fs.statSync(path.join(folderPath, f)).isFile())
+    .sort((a, b) => a.localeCompare(b));
 
-for (const sqlFile of sqlFiles) {
-  const sqlFilePath = path.join(folderPath, sqlFile);
-  const sqlContent = fs.readFileSync(sqlFilePath, 'utf8');
+  for (const sqlFile of sqlFiles) {
+    const sqlFilePath = path.join(folderPath, sqlFile);
+    const sqlContent = fs.readFileSync(sqlFilePath, 'utf8');
 
-  let resultOutput = '';
-  const statements = splitSqlStatements(sqlContent);
+    let resultOutput = '';
+    const statements = splitSqlStatements(sqlContent);
 
-  for (const stmtSql of statements) {
-    db.exec({
-      sql: stmtSql,
-      rowMode: 'array',
-      callback: (row) => {
-        resultOutput += row.map(v => (v === null || v === undefined ? '' : String(v))).join('|') + '\n';
-      }
-    });
+    for (const stmtSql of statements) {
+      db.exec({
+        sql: stmtSql,
+        rowMode: 'array',
+        callback: (row) => {
+          resultOutput += row.map(v => (v === null || v === undefined ? '' : String(v))).join('|') + '\n';
+        }
+      });
+    }
+
+    const rootName = path.basename(sqlFile, '.sql');
+    const resultFilePath = path.join(folderPath, `${rootName}.result.txt`);
+    fs.writeFileSync(resultFilePath, resultOutput, 'utf8');
   }
-
-  const rootName = path.basename(sqlFile, '.sql');
-  const resultFilePath = path.join(folderPath, `${rootName}.result.txt`);
-  fs.writeFileSync(resultFilePath, resultOutput, 'utf8');
 }
 
 // Export database binary buffer to outputDbPath
