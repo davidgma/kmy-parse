@@ -5,8 +5,25 @@ import path from 'path';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { XMLParser } from 'fast-xml-parser';
 
-// 1. Determine target folder argument
-const folderArg = process.argv[2] || 'data';
+// 1. Parse optional command line arguments: --folder, --inputXml, --outputDb
+let folderArg = 'data';
+let inputXmlArg = 'input.xml';
+let outputDbArg = 'output.sqlite';
+
+const args = process.argv.slice(2);
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  if (arg === '--folder' && i + 1 < args.length) {
+    folderArg = args[++i];
+  } else if (arg === '--inputXml' && i + 1 < args.length) {
+    inputXmlArg = args[++i];
+  } else if (arg === '--outputDb' && i + 1 < args.length) {
+    outputDbArg = args[++i];
+  } else if (!arg.startsWith('--') && i === 0) {
+    folderArg = arg;
+  }
+}
+
 const folderPath = path.isAbsolute(folderArg)
   ? folderArg
   : path.join(process.cwd(), folderArg);
@@ -17,15 +34,21 @@ if (!fs.existsSync(folderPath) || !fs.statSync(folderPath).isDirectory()) {
   process.exit(1);
 }
 
-// Check if input.xml exists
-const inputXmlPath = path.join(folderPath, 'input.xml');
+// Check if input XML file exists
+const inputXmlPath = path.isAbsolute(inputXmlArg)
+  ? inputXmlArg
+  : path.join(folderPath, inputXmlArg);
+
 if (!fs.existsSync(inputXmlPath) || !fs.statSync(inputXmlPath).isFile()) {
-  console.error(`File "input.xml" does not exist in folder "${folderArg}".`);
+  console.error(`File "${inputXmlArg}" does not exist in folder "${folderArg}".`);
   process.exit(1);
 }
 
 // 2. Setup output SQLite database path
-const outputDbPath = path.join(folderPath, 'output.sqlite');
+const outputDbPath = path.isAbsolute(outputDbArg)
+  ? outputDbArg
+  : path.join(folderPath, outputDbArg);
+
 if (fs.existsSync(outputDbPath)) {
   fs.unlinkSync(outputDbPath);
 }

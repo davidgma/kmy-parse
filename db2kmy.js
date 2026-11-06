@@ -5,8 +5,25 @@ import path from 'path';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { XMLBuilder } from 'fast-xml-parser';
 
-// 1. Determine folder argument
-const folderArg = process.argv[2] || 'data';
+// 1. Parse optional command line arguments: --folder, --inputDb, --outputKmy
+let folderArg = 'data';
+let inputDbArg = 'output.sqlite';
+let outputKmyArg = 'output.xml';
+
+const args = process.argv.slice(2);
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  if (arg === '--folder' && i + 1 < args.length) {
+    folderArg = args[++i];
+  } else if (arg === '--inputDb' && i + 1 < args.length) {
+    inputDbArg = args[++i];
+  } else if (arg === '--outputKmy' && i + 1 < args.length) {
+    outputKmyArg = args[++i];
+  } else if (!arg.startsWith('--') && i === 0) {
+    folderArg = arg;
+  }
+}
+
 const folderPath = path.isAbsolute(folderArg)
   ? folderArg
   : path.join(process.cwd(), folderArg);
@@ -17,20 +34,29 @@ if (!fs.existsSync(folderPath) || !fs.statSync(folderPath).isDirectory()) {
   process.exit(1);
 }
 
-// Check for sqlite file in folder
-let sqlitePath = path.join(folderPath, 'output.sqlite');
+// Determine input SQLite database path
+let sqlitePath = path.isAbsolute(inputDbArg)
+  ? inputDbArg
+  : path.join(folderPath, inputDbArg);
+
 if (!fs.existsSync(sqlitePath)) {
+  // If explicitly provided name not found, search for any .sqlite file in folderPath
   const files = fs.readdirSync(folderPath);
   const found = files.find(f => f.endsWith('.sqlite'));
   if (found) {
     sqlitePath = path.join(folderPath, found);
   } else {
-    console.error(`No SQLite database file found in folder "${folderArg}".`);
+    console.error(`SQLite database file "${inputDbArg}" does not exist in folder "${folderArg}".`);
     process.exit(1);
   }
 }
 
-// 2. Load SQLite database
+// Determine output XML file path
+const outputXmlPath = path.isAbsolute(outputKmyArg)
+  ? outputKmyArg
+  : path.join(folderPath, outputKmyArg);
+
+// 2. Load SQLite database into WASM memory
 const sqlite3 = await sqlite3InitModule();
 const buffer = fs.readFileSync(sqlitePath);
 const pBuf = sqlite3.wasm.alloc(buffer.length);
@@ -102,6 +128,17 @@ function queryAll(db, tableName) {
   return rows;
 }
 
+// Helper to group rows by key for O(1) linear lookups
+function groupBy(rows, keyField) {
+  const map = new Map();
+  for (const r of rows) {
+    const k = r[keyField] || '';
+    if (!map.has(k)) map.set(k, []);
+    map.get(k).push(r);
+  }
+  return map;
+}
+
 function buildFileInfo(db) {
   const rows = queryAll(db, 't_file_info');
   if (rows.length === 0) return null;
@@ -164,6 +201,8 @@ function buildInstitutions(db) {
 
   if (instRows.length === 0) return null;
 
+  const accInstMap = groupBy(accInstRows, 'institution_id');
+
   const instChildren = [];
   for (const inst of instRows) {
     const children = [];
@@ -183,7 +222,7 @@ function buildInstitutions(db) {
       }
     });
 
-    const accIds = accInstRows.filter(r => r.institution_id === inst.id);
+    const accIds = accInstMap.get(inst.id) || [];
     if (accIds.length > 0) {
       const accIdChildren = accIds.map(a => ({
         ACCOUNTID: [],
@@ -255,11 +294,14 @@ function buildAccounts(db) {
 
   if (accRows.length === 0) return null;
 
+  const subMap = groupBy(subRows, 'parent_id');
+  const kvMap = groupBy(kvRows, 'account_id');
+
   const accChildren = [];
   for (const acc of accRows) {
     const children = [];
 
-    const subs = subRows.filter(r => r.parent_id === acc.id);
+    const subs = subMap.get(acc.id) || [];
     if (subs.length > 0) {
       children.push({
         SUBACCOUNTS: subs.map(s => ({
@@ -269,7 +311,7 @@ function buildAccounts(db) {
       });
     }
 
-    const kvs = kvRows.filter(r => r.account_id === acc.id);
+    const kvs = kvMap.get(acc.id) || [];
     if (kvs.length > 0) {
       children.push({
         KEYVALUEPAIRS: kvs.map(kv => ({
@@ -311,9 +353,11 @@ function buildTransactions(db) {
 
   if (txRows.length === 0) return null;
 
+  const splitMap = groupBy(splitRows, 'transaction_id');
+
   const txChildren = [];
   for (const tx of txRows) {
-    const splits = splitRows.filter(s => s.transaction_id === tx.id);
+    const splits = splitMap.get(tx.id) || [];
     const splitChildren = splits.map(s => ({
       SPLIT: [],
       ':@': {
@@ -376,11 +420,13 @@ function buildSecurities(db) {
 
   if (secRows.length === 0) return null;
 
+  const kvMap = groupBy(kvRows, 'security_id');
+
   const secChildren = [];
   for (const sec of secRows) {
     const children = [];
 
-    const kvs = kvRows.filter(r => r.security_id === sec.id);
+    const kvs = kvMap.get(sec.id) || [];
     if (kvs.length > 0) {
       children.push({
         KEYVALUEPAIRS: kvs.map(kv => ({
@@ -484,26 +530,31 @@ function buildReports(db) {
 
   if (repRows.length === 0) return null;
 
+  const catMap = groupBy(catRows, 'report_id');
+  const accMap = groupBy(accRows, 'report_id');
+  const grpMap = groupBy(grpRows, 'report_id');
+  const dtMap = groupBy(dtRows, 'report_id');
+
   const repChildren = [];
   for (const rep of repRows) {
     const children = [];
 
-    const cats = catRows.filter(r => r.report_id === rep.id);
+    const cats = catMap.get(rep.id) || [];
     for (const c of cats) {
       children.push({ CATEGORY: [], ':@': { id: c.category_id || '' } });
     }
 
-    const accs = accRows.filter(r => r.report_id === rep.id);
+    const accs = accMap.get(rep.id) || [];
     for (const a of accs) {
       children.push({ ACCOUNT: [], ':@': { id: a.account_id || '' } });
     }
 
-    const grps = grpRows.filter(r => r.report_id === rep.id);
+    const grps = grpMap.get(rep.id) || [];
     for (const g of grps) {
       children.push({ ACCOUNTGROUP: [], ':@': { group: g.account_group || '' } });
     }
 
-    const dts = dtRows.filter(r => r.report_id === rep.id);
+    const dts = dtMap.get(rep.id) || [];
     for (const d of dts) {
       children.push({ DATES: [], ':@': { from: d.from || '', to: d.to || '' } });
     }
@@ -546,15 +597,18 @@ function buildBudgets(db) {
 
   if (bRows.length === 0) return null;
 
+  const baMap = groupBy(baRows, 'budget_id');
+  const pMap = groupBy(pRows, 'account_id');
+
   const bChildren = [];
   for (const b of bRows) {
     const accChildren = [];
 
-    const bAccs = baRows.filter(r => r.budget_id === b.id);
+    const bAccs = baMap.get(b.id) || [];
     for (const ba of bAccs) {
       const pChildren = [];
 
-      const pers = pRows.filter(r => r.account_id === ba.account_id);
+      const pers = pMap.get(ba.account_id) || [];
       for (const p of pers) {
         pChildren.push({
           PERIOD: [],
@@ -654,7 +708,6 @@ const builder = new XMLBuilder({
 
 const xmlString = builder.build(xmlData);
 
-const outputXmlPath = path.join(folderPath, 'output.xml');
 fs.writeFileSync(outputXmlPath, xmlString, 'utf8');
 
 db.close();
