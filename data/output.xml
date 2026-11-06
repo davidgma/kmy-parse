@@ -59,15 +59,15 @@
  </KEYVALUEPAIRS>
  <SCHEDULES/>
  <SECURITIES>
-  <SECURITY id="E000001" name="Standard Life Pension FTSE Tracker" symbol="STFTK" type="1" rounding-method="" saf="100" pp="4" trading-currency="" trading-market="">
+  <SECURITY id="E000001" name="Standard Life Pension FTSE Tracker" symbol="STFTK" type="1" rounding-method="0" saf="100" pp="4" trading-currency="GBP" trading-market="FUND">
    <KEYVALUEPAIRS>
     <PAIR key="kmm-online-factor" value="1/100"/>
    </KEYVALUEPAIRS>
   </SECURITY>
  </SECURITIES>
  <CURRENCIES>
-  <CURRENCY id="GBP" name="Pound Sterling" symbol="£" type="3" rounding-method="" saf="100" pp="2" scf="100"/>
-  <CURRENCY id="EUR" name="Euro" symbol="€" type="3" rounding-method="" saf="100" pp="2" scf="100"/>
+  <CURRENCY id="GBP" name="Pound Sterling" symbol="£" type="3" rounding-method="7" saf="100" pp="2" scf="100"/>
+  <CURRENCY id="EUR" name="Euro" symbol="€" type="3" rounding-method="7" saf="100" pp="2" scf="100"/>
  </CURRENCIES>
  <PRICES>
   <PRICEPAIR from="GBP" to="EUR">

@@ -324,21 +324,28 @@ function buildAccounts(db) {
       });
     }
 
+    const accAttrs = {
+      id: acc.id || '',
+      parentaccount: acc.parentaccount || '',
+      lastreconciled: acc.lastreconciled || '',
+      lastmodified: acc.lastmodified || '',
+      institution: acc.institution || '',
+      opened: acc.opened || '',
+      number: acc.number || '',
+      type: acc.type !== undefined ? String(acc.type) : '',
+      name: acc.name || '',
+      description: acc.description || '',
+      currency: acc.currency || ''
+    };
+
+    const hierVal = acc.hierarchy !== undefined && acc.hierarchy !== null ? acc.hierarchy : (acc.hierachy !== undefined && acc.hierachy !== null ? acc.hierachy : '');
+    if (hierVal !== '' && hierVal !== undefined) {
+      accAttrs.hierarchy = String(hierVal);
+    }
+
     accChildren.push({
       ACCOUNT: children,
-      ':@': {
-        id: acc.id || '',
-        parentaccount: acc.parentaccount || '',
-        lastreconciled: acc.lastreconciled || '',
-        lastmodified: acc.lastmodified || '',
-        institution: acc.institution || '',
-        opened: acc.opened || '',
-        number: acc.number || '',
-        type: acc.type !== undefined ? String(acc.type) : '',
-        name: acc.name || '',
-        description: acc.description || '',
-        currency: acc.currency || ''
-      }
+      ':@': accAttrs
     });
   }
 

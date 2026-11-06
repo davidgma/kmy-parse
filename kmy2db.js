@@ -67,7 +67,7 @@ CREATE TABLE t_user (name TEXT, email TEXT, street TEXT, city TEXT, state TEXT, 
 CREATE TABLE t_institutions (id TEXT, name TEXT, manager TEXT, sortcode TEXT, street TEXT, city TEXT, state TEXT, zip TEXT, telephone TEXT, country TEXT, county TEXT, zipcode TEXT, postcode TEXT);
 CREATE TABLE t_accounts_per_institution (institution_id TEXT, account_id TEXT);
 CREATE TABLE t_payees (id TEXT, name TEXT, reference TEXT, email TEXT, matching_enabled TEXT, street TEXT, city TEXT, zip TEXT, telephone TEXT, country TEXT, zipcode TEXT, postcode TEXT);
-CREATE TABLE t_accounts (id TEXT, parentaccount TEXT, lastreconciled TEXT, lastmodified TEXT, institution TEXT, opened TEXT, number TEXT, type TEXT, name TEXT, description TEXT, currency TEXT, hierachy TEXT);
+CREATE TABLE t_accounts (id TEXT, parentaccount TEXT, lastreconciled TEXT, lastmodified TEXT, institution TEXT, opened TEXT, number TEXT, type TEXT, name TEXT, description TEXT, currency TEXT, hierarchy TEXT);
 CREATE TABLE t_subaccount_per_account (parent_id TEXT, child_id TEXT);
 CREATE TABLE t_account_key_value_pairs (account_id TEXT, key TEXT, value TEXT);
 CREATE TABLE t_transactions (id TEXT, postdate TEXT, memo TEXT, entrydate TEXT, commodity TEXT);
@@ -105,6 +105,17 @@ function convertRatio(val) {
     }
   }
   return val;
+}
+
+// Helper to look up XML attributes, accounting for hyphens vs underscores vs camelCase
+function getAttr(attrs, key) {
+  if (!attrs) return '';
+  if (attrs[key] !== undefined) return attrs[key];
+  const hyphenated = key.replace(/_/g, '-');
+  if (attrs[hyphenated] !== undefined) return attrs[hyphenated];
+  const noSep = key.replace(/_/g, '');
+  if (attrs[noSep] !== undefined) return attrs[noSep];
+  return '';
 }
 
 // 4. Parse XML
@@ -187,7 +198,7 @@ function processNodes(nodeList, parentContext = {}) {
           const cDetails = getNodeDetails(childNode);
           if (!cDetails.tagName) continue;
           const setting_name = cDetails.tagName.toLowerCase();
-          const rawVal = cDetails.attrs.date || cDetails.attrs.id || cDetails.attrs.val || cDetails.attrs.value || Object.values(cDetails.attrs)[0] || cDetails.text || '';
+          const rawVal = getAttr(cDetails.attrs, 'date') || getAttr(cDetails.attrs, 'id') || getAttr(cDetails.attrs, 'val') || getAttr(cDetails.attrs, 'value') || Object.values(cDetails.attrs)[0] || cDetails.text || '';
           const setting = convertRatio(rawVal);
           db.exec({
             sql: 'INSERT INTO t_file_info (setting_name, setting) VALUES (?, ?)',
@@ -198,22 +209,22 @@ function processNodes(nodeList, parentContext = {}) {
       }
 
       case 'USER': {
-        const name = attrs.name || '';
-        const email = attrs.email || '';
+        const name = getAttr(attrs, 'name');
+        const email = getAttr(attrs, 'email');
         let street = '', city = '', state = '', zip = '', telephone = '', country = '', county = '', zipcode = '', postcode = '';
 
         for (const childNode of children) {
           const cDetails = getNodeDetails(childNode);
           if (cDetails.tagName.toUpperCase() === 'ADDRESS') {
-            street = cDetails.attrs.street || '';
-            city = cDetails.attrs.city || '';
-            state = cDetails.attrs.state || '';
-            zip = cDetails.attrs.zip || '';
-            telephone = cDetails.attrs.telephone || '';
-            country = cDetails.attrs.country || '';
-            county = cDetails.attrs.county || '';
-            zipcode = cDetails.attrs.zipcode || '';
-            postcode = cDetails.attrs.postcode || '';
+            street = getAttr(cDetails.attrs, 'street');
+            city = getAttr(cDetails.attrs, 'city');
+            state = getAttr(cDetails.attrs, 'state');
+            zip = getAttr(cDetails.attrs, 'zip');
+            telephone = getAttr(cDetails.attrs, 'telephone');
+            country = getAttr(cDetails.attrs, 'country');
+            county = getAttr(cDetails.attrs, 'county');
+            zipcode = getAttr(cDetails.attrs, 'zipcode');
+            postcode = getAttr(cDetails.attrs, 'postcode');
           }
         }
 
@@ -228,29 +239,29 @@ function processNodes(nodeList, parentContext = {}) {
         for (const childNode of children) {
           const cDetails = getNodeDetails(childNode);
           if (cDetails.tagName.toUpperCase() === 'INSTITUTION') {
-            const id = cDetails.attrs.id || '';
-            const name = cDetails.attrs.name || '';
-            const manager = cDetails.attrs.manager || '';
-            const sortcode = cDetails.attrs.sortcode || '';
+            const id = getAttr(cDetails.attrs, 'id');
+            const name = getAttr(cDetails.attrs, 'name');
+            const manager = getAttr(cDetails.attrs, 'manager');
+            const sortcode = getAttr(cDetails.attrs, 'sortcode');
             let street = '', city = '', state = '', zip = '', telephone = '', country = '', county = '', zipcode = '', postcode = '';
 
             for (const instChild of cDetails.children) {
               const icDetails = getNodeDetails(instChild);
               if (icDetails.tagName.toUpperCase() === 'ADDRESS') {
-                street = icDetails.attrs.street || '';
-                city = icDetails.attrs.city || '';
-                state = icDetails.attrs.state || '';
-                zip = icDetails.attrs.zip || '';
-                telephone = icDetails.attrs.telephone || '';
-                country = icDetails.attrs.country || '';
-                county = icDetails.attrs.county || '';
-                zipcode = icDetails.attrs.zipcode || '';
-                postcode = icDetails.attrs.postcode || '';
+                street = getAttr(icDetails.attrs, 'street');
+                city = getAttr(icDetails.attrs, 'city');
+                state = getAttr(icDetails.attrs, 'state');
+                zip = getAttr(icDetails.attrs, 'zip');
+                telephone = getAttr(icDetails.attrs, 'telephone');
+                country = getAttr(icDetails.attrs, 'country');
+                county = getAttr(icDetails.attrs, 'county');
+                zipcode = getAttr(icDetails.attrs, 'zipcode');
+                postcode = getAttr(icDetails.attrs, 'postcode');
               } else if (icDetails.tagName.toUpperCase() === 'ACCOUNTIDS') {
                 for (const accIdNode of icDetails.children) {
                   const aidDetails = getNodeDetails(accIdNode);
                   if (aidDetails.tagName.toUpperCase() === 'ACCOUNTID') {
-                    const account_id = aidDetails.attrs.id || '';
+                    const account_id = getAttr(aidDetails.attrs, 'id');
                     db.exec({
                       sql: 'INSERT INTO t_accounts_per_institution (institution_id, account_id) VALUES (?, ?)',
                       bind: [id, account_id]
@@ -273,23 +284,23 @@ function processNodes(nodeList, parentContext = {}) {
         for (const childNode of children) {
           const cDetails = getNodeDetails(childNode);
           if (cDetails.tagName.toUpperCase() === 'PAYEE') {
-            const id = cDetails.attrs.id || '';
-            const name = cDetails.attrs.name || '';
-            const reference = cDetails.attrs.reference || '';
-            const email = cDetails.attrs.email || '';
-            const matching_enabled = cDetails.attrs.matchingenabled !== undefined ? cDetails.attrs.matchingenabled : (cDetails.attrs.matching_enabled !== undefined ? cDetails.attrs.matching_enabled : '');
+            const id = getAttr(cDetails.attrs, 'id');
+            const name = getAttr(cDetails.attrs, 'name');
+            const reference = getAttr(cDetails.attrs, 'reference');
+            const email = getAttr(cDetails.attrs, 'email');
+            const matching_enabled = getAttr(cDetails.attrs, 'matching_enabled');
             let street = '', city = '', zip = '', telephone = '', country = '', zipcode = '', postcode = '';
 
             for (const payeeChild of cDetails.children) {
               const pcDetails = getNodeDetails(payeeChild);
               if (pcDetails.tagName.toUpperCase() === 'ADDRESS') {
-                street = pcDetails.attrs.street || '';
-                city = pcDetails.attrs.city || '';
-                zip = pcDetails.attrs.zip || '';
-                telephone = pcDetails.attrs.telephone || '';
-                country = pcDetails.attrs.country || '';
-                zipcode = pcDetails.attrs.zipcode || '';
-                postcode = pcDetails.attrs.postcode || '';
+                street = getAttr(pcDetails.attrs, 'street');
+                city = getAttr(pcDetails.attrs, 'city');
+                zip = getAttr(pcDetails.attrs, 'zip');
+                telephone = getAttr(pcDetails.attrs, 'telephone');
+                country = getAttr(pcDetails.attrs, 'country');
+                zipcode = getAttr(pcDetails.attrs, 'zipcode');
+                postcode = getAttr(pcDetails.attrs, 'postcode');
               }
             }
 
@@ -306,22 +317,22 @@ function processNodes(nodeList, parentContext = {}) {
         for (const childNode of children) {
           const cDetails = getNodeDetails(childNode);
           if (cDetails.tagName.toUpperCase() === 'ACCOUNT') {
-            const id = cDetails.attrs.id || '';
-            const parentaccount = cDetails.attrs.parentaccount || '';
-            const lastreconciled = cDetails.attrs.lastreconciled || '';
-            const lastmodified = cDetails.attrs.lastmodified || '';
-            const institution = cDetails.attrs.institution || '';
-            const opened = cDetails.attrs.opened || '';
-            const number = cDetails.attrs.number || '';
-            const type = cDetails.attrs.type || '';
-            const name = cDetails.attrs.name || '';
-            const description = cDetails.attrs.description || '';
-            const currency = cDetails.attrs.currency || '';
-            const hierachy = '';
+            const id = getAttr(cDetails.attrs, 'id');
+            const parentaccount = getAttr(cDetails.attrs, 'parentaccount');
+            const lastreconciled = getAttr(cDetails.attrs, 'lastreconciled');
+            const lastmodified = getAttr(cDetails.attrs, 'lastmodified');
+            const institution = getAttr(cDetails.attrs, 'institution');
+            const opened = getAttr(cDetails.attrs, 'opened');
+            const number = getAttr(cDetails.attrs, 'number');
+            const type = getAttr(cDetails.attrs, 'type');
+            const name = getAttr(cDetails.attrs, 'name');
+            const description = getAttr(cDetails.attrs, 'description');
+            const currency = getAttr(cDetails.attrs, 'currency');
+            const hierarchy = getAttr(cDetails.attrs, 'hierarchy');
 
             db.exec({
-              sql: 'INSERT INTO t_accounts (id, parentaccount, lastreconciled, lastmodified, institution, opened, number, type, name, description, currency, hierachy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-              bind: [id, parentaccount, lastreconciled, lastmodified, institution, opened, number, type, name, description, currency, hierachy]
+              sql: 'INSERT INTO t_accounts (id, parentaccount, lastreconciled, lastmodified, institution, opened, number, type, name, description, currency, hierarchy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              bind: [id, parentaccount, lastreconciled, lastmodified, institution, opened, number, type, name, description, currency, hierarchy]
             });
 
             for (const accChild of cDetails.children) {
@@ -330,7 +341,7 @@ function processNodes(nodeList, parentContext = {}) {
                 for (const subNode of acDetails.children) {
                   const sDetails = getNodeDetails(subNode);
                   if (sDetails.tagName.toUpperCase() === 'SUBACCOUNT') {
-                    const child_id = sDetails.attrs.id || '';
+                    const child_id = getAttr(sDetails.attrs, 'id');
                     db.exec({
                       sql: 'INSERT INTO t_subaccount_per_account (parent_id, child_id) VALUES (?, ?)',
                       bind: [id, child_id]
@@ -341,8 +352,8 @@ function processNodes(nodeList, parentContext = {}) {
                 for (const pairNode of acDetails.children) {
                   const pDetails = getNodeDetails(pairNode);
                   if (pDetails.tagName.toUpperCase() === 'PAIR') {
-                    const key = pDetails.attrs.key || '';
-                    const value = convertRatio(pDetails.attrs.value || '');
+                    const key = getAttr(pDetails.attrs, 'key');
+                    const value = convertRatio(getAttr(pDetails.attrs, 'value'));
                     db.exec({
                       sql: 'INSERT INTO t_account_key_value_pairs (account_id, key, value) VALUES (?, ?, ?)',
                       bind: [id, key, value]
@@ -361,8 +372,8 @@ function processNodes(nodeList, parentContext = {}) {
           for (const pairNode of children) {
             const pDetails = getNodeDetails(pairNode);
             if (pDetails.tagName.toUpperCase() === 'PAIR') {
-              const key = pDetails.attrs.key || '';
-              const value = convertRatio(pDetails.attrs.value || '');
+              const key = getAttr(pDetails.attrs, 'key');
+              const value = convertRatio(getAttr(pDetails.attrs, 'value'));
               db.exec({
                 sql: 'INSERT INTO t_key_value_pairs (key, value) VALUES (?, ?)',
                 bind: [key, value]
@@ -377,11 +388,11 @@ function processNodes(nodeList, parentContext = {}) {
         for (const childNode of children) {
           const cDetails = getNodeDetails(childNode);
           if (cDetails.tagName.toUpperCase() === 'TRANSACTION') {
-            const id = cDetails.attrs.id || '';
-            const postdate = cDetails.attrs.postdate || '';
-            const memo = cDetails.attrs.memo || '';
-            const entrydate = cDetails.attrs.entrydate || '';
-            const commodity = cDetails.attrs.commodity || '';
+            const id = getAttr(cDetails.attrs, 'id');
+            const postdate = getAttr(cDetails.attrs, 'postdate');
+            const memo = getAttr(cDetails.attrs, 'memo');
+            const entrydate = getAttr(cDetails.attrs, 'entrydate');
+            const commodity = getAttr(cDetails.attrs, 'commodity');
 
             db.exec({
               sql: 'INSERT INTO t_transactions (id, postdate, memo, entrydate, commodity) VALUES (?, ?, ?, ?, ?)',
@@ -395,18 +406,18 @@ function processNodes(nodeList, parentContext = {}) {
                   const sDetails = getNodeDetails(splitNode);
                   if (sDetails.tagName.toUpperCase() === 'SPLIT') {
                     const sAttrs = sDetails.attrs;
-                    const splitId = sAttrs.id || '';
-                    const payee = sAttrs.payee || '';
-                    const reconciledate = sAttrs.reconciledate || '';
-                    const action = sAttrs.action || '';
-                    const reconcileflag = sAttrs.reconcileflag || '';
-                    const value = convertRatio(sAttrs.value || '');
-                    const shares = convertRatio(sAttrs.shares || '');
-                    const price = convertRatio(sAttrs.price || '');
-                    const splitMemo = sAttrs.memo || '';
-                    const account = sAttrs.account || '';
-                    const number = sAttrs.number || '';
-                    const bankid = sAttrs.bankid || '';
+                    const splitId = getAttr(sAttrs, 'id');
+                    const payee = getAttr(sAttrs, 'payee');
+                    const reconciledate = getAttr(sAttrs, 'reconciledate');
+                    const action = getAttr(sAttrs, 'action');
+                    const reconcileflag = getAttr(sAttrs, 'reconcileflag');
+                    const value = convertRatio(getAttr(sAttrs, 'value'));
+                    const shares = convertRatio(getAttr(sAttrs, 'shares'));
+                    const price = convertRatio(getAttr(sAttrs, 'price'));
+                    const splitMemo = getAttr(sAttrs, 'memo');
+                    const account = getAttr(sAttrs, 'account');
+                    const number = getAttr(sAttrs, 'number');
+                    const bankid = getAttr(sAttrs, 'bankid');
 
                     db.exec({
                       sql: 'INSERT INTO t_splits (split_id, transaction_id, payee, reconciledate, action, reconcileflag, value, shares, price, memo, account, number, bankid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -425,15 +436,15 @@ function processNodes(nodeList, parentContext = {}) {
         for (const childNode of children) {
           const cDetails = getNodeDetails(childNode);
           if (cDetails.tagName.toUpperCase() === 'SECURITY') {
-            const id = cDetails.attrs.id || '';
-            const name = cDetails.attrs.name || '';
-            const symbol = cDetails.attrs.symbol || '';
-            const type = cDetails.attrs.type || '';
-            const rounding_method = cDetails['rounding-method'] !== undefined ? cDetails['rounding-method'] : (cDetails.rounding_method || '');
-            const saf = cDetails.attrs.saf || '';
-            const pp = cDetails.attrs.pp || '';
-            const trading_currency = cDetails['trading-currency'] !== undefined ? cDetails['trading-currency'] : (cDetails.trading_currency || '');
-            const trading_market = cDetails['trading-market'] !== undefined ? cDetails['trading-market'] : (cDetails.trading_market || '');
+            const id = getAttr(cDetails.attrs, 'id');
+            const name = getAttr(cDetails.attrs, 'name');
+            const symbol = getAttr(cDetails.attrs, 'symbol');
+            const type = getAttr(cDetails.attrs, 'type');
+            const rounding_method = getAttr(cDetails.attrs, 'rounding_method');
+            const saf = getAttr(cDetails.attrs, 'saf');
+            const pp = getAttr(cDetails.attrs, 'pp');
+            const trading_currency = getAttr(cDetails.attrs, 'trading_currency');
+            const trading_market = getAttr(cDetails.attrs, 'trading_market');
 
             db.exec({
               sql: 'INSERT INTO t_securities (id, name, symbol, type, rounding_method, saf, pp, trading_currency, trading_market) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -446,8 +457,8 @@ function processNodes(nodeList, parentContext = {}) {
                 for (const pairNode of scDetails.children) {
                   const pDetails = getNodeDetails(pairNode);
                   if (pDetails.tagName.toUpperCase() === 'PAIR') {
-                    const key = pDetails.attrs.key || '';
-                    const value = convertRatio(pDetails.attrs.value || '');
+                    const key = getAttr(pDetails.attrs, 'key');
+                    const value = convertRatio(getAttr(pDetails.attrs, 'value'));
                     db.exec({
                       sql: 'INSERT INTO t_security_key_value_pairs (security_id, key, value) VALUES (?, ?, ?)',
                       bind: [id, key, value]
@@ -465,14 +476,14 @@ function processNodes(nodeList, parentContext = {}) {
         for (const childNode of children) {
           const cDetails = getNodeDetails(childNode);
           if (cDetails.tagName.toUpperCase() === 'CURRENCY') {
-            const id = cDetails.attrs.id || '';
-            const name = cDetails.attrs.name || '';
-            const symbol = cDetails.attrs.symbol || '';
-            const type = cDetails.attrs.type || '';
-            const rounding_method = cDetails['rounding-method'] !== undefined ? cDetails['rounding-method'] : (cDetails.rounding_method || '');
-            const saf = cDetails.attrs.saf || '';
-            const pp = cDetails.attrs.pp || '';
-            const scf = cDetails.attrs.scf || '';
+            const id = getAttr(cDetails.attrs, 'id');
+            const name = getAttr(cDetails.attrs, 'name');
+            const symbol = getAttr(cDetails.attrs, 'symbol');
+            const type = getAttr(cDetails.attrs, 'type');
+            const rounding_method = getAttr(cDetails.attrs, 'rounding_method');
+            const saf = getAttr(cDetails.attrs, 'saf');
+            const pp = getAttr(cDetails.attrs, 'pp');
+            const scf = getAttr(cDetails.attrs, 'scf');
 
             db.exec({
               sql: 'INSERT INTO t_currencies (id, name, symbol, type, rounding_method, saf, pp, scf) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
