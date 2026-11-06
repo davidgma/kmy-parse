@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE KMYMONEY-FILE>
+
 <KMYMONEY-FILE>
  <FILEINFO>
   <CREATION_DATE date="2007-11-03"/>
@@ -42,10 +44,7 @@
  </ACCOUNTS>
  <TRANSACTIONS>
   <TRANSACTION id="T000000000000000001" postdate="2007-11-03" memo="Salary" entrydate="2007-12-13" commodity="GBP">
-   <SPLITS>
-    <SPLIT id="S0001" payee="P000001" reconciledate="2007-11-04" action="" reconcileflag="1" value="1/10" shares="1/10" price="1/1" memo="Split 1" account="A000001" number="1" bankid="B1"/>
-    <SPLIT id="S0002" payee="P000001" reconciledate="2007-11-04" action="" reconcileflag="1" value="-1/10" shares="-1/10" price="1/1" memo="Split 2" account="AStd::Asset" number="2" bankid="B2"/>
-   </SPLITS>
+   <SPLITS/>
   </TRANSACTION>
  </TRANSACTIONS>
  <KEYVALUEPAIRS>

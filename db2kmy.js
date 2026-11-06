@@ -686,13 +686,6 @@ if (budgetsObj) kmyChildren.push(budgetsObj);
 
 const xmlData = [
   {
-    '?xml': [],
-    ':@': {
-      version: '1.0',
-      encoding: 'utf-8'
-    }
-  },
-  {
     'KMYMONEY-FILE': kmyChildren
   }
 ];
@@ -706,7 +699,8 @@ const builder = new XMLBuilder({
   suppressEmptyNode: true
 });
 
-const xmlString = builder.build(xmlData);
+const bodyXml = builder.build(xmlData);
+const xmlString = '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE KMYMONEY-FILE>\n' + bodyXml + '\n';
 
 fs.writeFileSync(outputXmlPath, xmlString, 'utf8');
 
