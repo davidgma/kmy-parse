@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<KMYMONEY-FILE>
+ <FILEINFO>
+  <CREATION_DATE date="2007-11-03"/>
+  <LAST_MODIFIED_DATE date="2026-11-03T10:36:01+00:00"/>
+  <VERSION id="1"/>
+  <FIXVERSION id="11"/>
+  <APPVERSION id="5.2.2"/>
+ </FILEINFO>
+ <USER name="David" email="david@example.com">
+  <ADDRESS street="1 My Address" city="London" state="Greater London" zip="12345" telephone="0208123456" country="UK" county="Middlesex" zipcode="12345" postcode="SW1A 1AA"/>
+ </USER>
+ <INSTITUTIONS>
+  <INSTITUTION id="I000001" name="HSBC" manager="John Smith" sortcode="40-00-00">
+   <ADDRESS street="1 Bank St" city="London" state="" zip="" telephone="" country="UK" county="" zipcode="" postcode=""/>
+   <ACCOUNTIDS>
+    <ACCOUNTID id="A000001"/>
+    <ACCOUNTID id="A000002"/>
+   </ACCOUNTIDS>
+  </INSTITUTION>
+ </INSTITUTIONS>
+ <PAYEES>
+  <PAYEE id="P000001" name="BoS Net Interest" reference="REF1" email="info@bos.com" matchingenabled="0">
+   <ADDRESS street="High St" city="Edinburgh" state="" zip="" telephone="0131" country="UK" county="" zipcode="" postcode=""/>
+  </PAYEE>
+  <PAYEE id="P000002" name="Mimi" reference="" email="email@hotmail.com" matchingenabled="0">
+   <ADDRESS street="her address" city="London" state="" zip="" telephone="0208" country="UK" county="" zipcode="" postcode=""/>
+  </PAYEE>
+ </PAYEES>
+ <ACCOUNTS>
+  <ACCOUNT id="AStd::Asset" parentaccount="" lastreconciled="" lastmodified="" institution="" opened="" number="" type="9" name="Asset" description="Top level asset" currency="GBP">
+   <SUBACCOUNTS>
+    <SUBACCOUNT id="A000001"/>
+    <SUBACCOUNT id="A000002"/>
+   </SUBACCOUNTS>
+  </ACCOUNT>
+  <ACCOUNT id="A000001" parentaccount="AStd::Asset" lastreconciled="2026-08-01" lastmodified="2026-08-07" institution="I000001" opened="2007-11-03" number="12345" type="1" name="BoS ChequePlus" description="Cheque account" currency="GBP">
+   <KEYVALUEPAIRS>
+    <PAIR key="lastNumberUsed" value="1/1"/>
+   </KEYVALUEPAIRS>
+  </ACCOUNT>
+ </ACCOUNTS>
+ <TRANSACTIONS>
+  <TRANSACTION id="T000000000000000001" postdate="2007-11-03" memo="Salary" entrydate="2007-12-13" commodity="GBP">
+   <SPLITS>
+    <SPLIT id="S0001" payee="P000001" reconciledate="2007-11-04" action="" reconcileflag="1" value="1/10" shares="1/10" price="1/1" memo="Split 1" account="A000001" number="1" bankid="B1"/>
+    <SPLIT id="S0002" payee="P000001" reconciledate="2007-11-04" action="" reconcileflag="1" value="-1/10" shares="-1/10" price="1/1" memo="Split 2" account="AStd::Asset" number="2" bankid="B2"/>
+   </SPLITS>
+  </TRANSACTION>
+ </TRANSACTIONS>
+ <KEYVALUEPAIRS>
+  <PAIR key="LastModificationDate" value="2026-11-03T10:36:01+00:00"/>
+  <PAIR key="kmm-baseCurrency" value="GBP"/>
+  <PAIR key="kmm-id" value="{6e2c84ac-bd63-45ec-9ddc-3a7ea3a123af}"/>
+ </KEYVALUEPAIRS>
+ <SECURITIES>
+  <SECURITY id="E000001" name="Standard Life Pension FTSE Tracker" symbol="STFTK" type="1" rounding-method="" saf="100" pp="4" trading-currency="" trading-market="">
+   <KEYVALUEPAIRS>
+    <PAIR key="kmm-online-factor" value="1/100"/>
+   </KEYVALUEPAIRS>
+  </SECURITY>
+ </SECURITIES>
+ <CURRENCIES>
+  <CURRENCY id="GBP" name="Pound Sterling" symbol="£" type="3" rounding-method="" saf="100" pp="2" scf="100"/>
+  <CURRENCY id="EUR" name="Euro" symbol="€" type="3" rounding-method="" saf="100" pp="2" scf="100"/>
+ </CURRENCIES>
+ <PRICES>
+  <PRICEPAIR from="GBP" to="EUR">
+   <PRICE date="2026-11-01" price="7267283/100000000" source="Yahoo"/>
+  </PRICEPAIR>
+ </PRICES>
+ <REPORTS>
+  <REPORT id="R000002" type="querytable 1.15" group="Transactions" name="Transactions by category" comment="Custom report" convertcurrency="1" favorite="0" skipZero="0" datelock="monthtodate" rowtype="payee" querycolumns="payee,account" tax="0" propBudgetDiff="0" investments="0" loans="0" hidetransactions="0" showcolumntotals="1" detail="none" includestransfers="0">
+   <CATEGORY id="A000088"/>
+   <ACCOUNT id="A000001"/>
+   <ACCOUNTGROUP group="income"/>
+   <DATES from="2026-01-01" to="2026-12-31"/>
+  </REPORT>
+ </REPORTS>
+ <BUDGETS>
+  <BUDGET id="B000001" name="Budget 2026" start="2026-01-01" version="2">
+   <ACCOUNT id="A000001" budgetlevel="monthly" budgetsubaccounts="0">
+    <PERIOD amount="61/1" start="2026-01-01"/>
+   </ACCOUNT>
+  </BUDGET>
+ </BUDGETS>
+</KMYMONEY-FILE>
